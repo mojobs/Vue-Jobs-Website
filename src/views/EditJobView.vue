@@ -1,3 +1,4 @@
+
 <template>
     <section class="bg-green-50">
       <div class="container m-auto max-w-2xl py-24">
@@ -5,7 +6,7 @@
           class="bg-white px-6 py-8 mb-4 shadow-md rounded-md border m-4 md:m-0"
         >
           <form @submit.prevent="handleSubmit">
-            <h2 class="text-3xl text-center font-semibold mb-6">Add Job</h2>
+            <h2 class="text-3xl text-center font-semibold mb-6">Edit Job</h2>
 
             <div class="mb-4">
               <label for="type" class="block text-gray-700 font-bold mb-2"
@@ -164,7 +165,7 @@
                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline"
                 type="submit"
               >
-                Add Job
+                Update Job
               </button>
             </div>
           </form>
@@ -176,12 +177,21 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { reactive, onMounted } from "vue";
 import axios from 'axios';
 import router from '@/router';
-import {useToast} from 'vue-toastification';
+import {useRoute} from 'vue-router'; 
+import useToast from 'vue-toastification'
 
+
+const route = useRoute();
+const jobId = route.params.id;
 const toast = useToast();
+
+const state = reactive({
+    job: {},
+    isLoading: true
+})
 
 const form = reactive({
     type: 'Full-Time',
@@ -198,7 +208,7 @@ const form = reactive({
 });
 
 const handleSubmit =  async () => {
-    const newJob = {
+    const updatedJob = {
         title: form.title,
         type: form.type,
         location: form.location,
@@ -210,16 +220,42 @@ const handleSubmit =  async () => {
             contactEmail: form.company.contactEmail,
             contactPhone: form.company.contactPhone
         }
-    }
+    };
     try {
-        const response = await axios.post('/api/jobs', newJob);
-        toast.success('Job added successfully')
-        router.push(`/jobs/${response.data.id}`)
+        const response = await axios.put(`/api/jobs/${jobId}`, updatedJob);
+        toast.success('Job updated successfully');
+        router.push(`/jobs/${response.data.id}`);
         
-    } catch (error) {
-         toast.error('Job was not added')
-    }
+    }catch (error) {
+        console.error('Error fetching job');
+        toast.error('Job was not added');
+    };
 
         
-}
+};
+
+onMounted (async () => {
+    try {
+        const response = await axios.get(`/api/jobs/${jobId}`);
+        state.jobs = response.data;
+
+        form.type = state.job.type;
+        form.title = state.job.title;
+        form.description = state.jobs.description;
+        form.salary = state,jobs.salary;
+        form.location = state.jobs.location;
+        form.company.name = state.jobs.company.name;
+        form.company.description = state.jobs.company.description;
+        form.company.contactEmail = state.jobs.company.contactEmail;
+        form.company.contactPhone = state.jobs.company.contactPhone;
+        
+    } catch (error) {
+        console.log('Error fetching job', error)
+        
+    }
+    finally{
+        state.isLoading = false
+    }
+})
 </script>
+
